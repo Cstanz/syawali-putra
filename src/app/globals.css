@@ -199,7 +199,12 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
   .site-header__year { flex: 0 0 auto; font-size: clamp(9px, 2.8vw, 11px); }
 
   .portrait-flow__scroll { font-size: 10px; }
-  .portrait-flow__layout { column-gap: clamp(12px, 4vw, 22px); }
+  /* Keep the intro copy aligned with the portrait on phones instead of
+     leaving a large empty band between the captions and image. */
+  .portrait-flow__layout { grid-template-columns: minmax(0, 1fr) var(--portrait-card-width) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); align-items: end; column-gap: clamp(7px, 2vw, 12px); }
+  .portrait-flow__frame { grid-column: 2; grid-row: 1; justify-self: center; }
+  .portrait-flow__caption--left { grid-column: 1; grid-row: 1; justify-items: end; text-align: right; }
+  .portrait-flow__caption--right { grid-column: 3; grid-row: 1; }
   .portrait-story__content { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr auto; align-items: start; gap: 24px 18px; padding-block: clamp(70px, 12svh, 110px) 28px; font-size: clamp(12px, 3.5vw, 14px); }
   .portrait-story__mark { width: 38px; }
   .portrait-story__recognition { grid-column: 1 / -1; align-self: center; gap: 12px; max-width: 35ch; }
@@ -258,8 +263,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
   .site-header__subrow { gap: 8px; }
   .site-header__subrow nav { gap: 5px 8px; font-size: 9px; }
   .site-header__year { font-size: 9px; }
-  .portrait-flow__layout { column-gap: 10px; }
-  .portrait-flow__lead, .portrait-flow__detail, .portrait-flow__meta { font-size: clamp(11px, 3.2vw, 14px); line-height: 1.12; }
+  .portrait-flow__layout { column-gap: 7px; }
+  .portrait-flow__lead, .portrait-flow__detail, .portrait-flow__meta { font-size: clamp(10px, 2.8vw, 12px); line-height: 1.12; }
   .portrait-story__content { gap: 18px 12px; }
   .work__intro h2 { font-size: clamp(2.7rem, 11vw, 3.6rem); }
   .project-card__display { grid-template-columns: minmax(54px, .65fr) minmax(0, 1.5fr) 18px; gap: 6px; }
