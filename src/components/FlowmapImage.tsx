@@ -95,7 +95,7 @@ const fragment = /* glsl */ `
   }
 `;
 
-function makeGrid(gl: WebGLRenderingContext | WebGL2RenderingContext) {
+function makeGrid(gl: Renderer["gl"]) {
   const side = GRID_SEGMENTS + 1;
   const positions = new Float32Array(side * side * 2);
   const uvs = new Float32Array(side * side * 2);
