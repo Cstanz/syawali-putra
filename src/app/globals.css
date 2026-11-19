@@ -287,6 +287,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
   .portrait-flow__frame { grid-column: 2; grid-row: 1; justify-self: center; }
   .portrait-flow__caption--left { grid-column: 1; grid-row: 1; justify-items: end; text-align: right; }
   .portrait-flow__caption--right { grid-column: 3; grid-row: 1; }
+  .portrait-flow__monogram .logo-mark { left: -9%; width: 118%; }
   .portrait-flow__lead, .portrait-flow__detail, .portrait-flow__meta { font-size: clamp(10px, 1.35vw, 14px); line-height: 1.12; }
   .portrait-story__content { gap: 12px; font-size: clamp(10px, 1.5vw, 15px); }
 }
