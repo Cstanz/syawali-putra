@@ -413,33 +413,26 @@ export function FlowmapImage({
       }
     };
 
-    // The intro loader covers the hero for ~1.7s. Start the WebGL setup once it is gone (or on the
-    // first interaction) so shader compilation never competes with the page's initial load.
-    const BOOT_DELAY = 2000;
-    const interactionEvents = ["pointerdown", "pointermove", "wheel", "touchstart", "keydown"] as const;
     let bootStarted = false;
-    const stopWaiting = () => {
-      interactionEvents.forEach((name) => window.removeEventListener(name, startBoot));
-      if (bootTimeoutId !== undefined) window.clearTimeout(bootTimeoutId);
-    };
     function startBoot() {
       if (cancelled || bootStarted) return;
       bootStarted = true;
-      stopWaiting();
       const idleWindow = window as typeof window & {
         requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
       };
       if (idleWindow.requestIdleCallback) idleBootId = idleWindow.requestIdleCallback(boot, { timeout: 900 });
       else bootTimeoutId = window.setTimeout(boot, 200);
     }
-    const scheduleBoot = () => {
-      if (cancelled || bootStarted) return;
-      interactionEvents.forEach((name) => window.addEventListener(name, startBoot, { passive: true, once: true }));
-      bootTimeoutId = window.setTimeout(startBoot, BOOT_DELAY);
-    };
 
-    if (image.complete) scheduleBoot();
-    else image.addEventListener("load", scheduleBoot, { once: true });
+    const onDemandPointer = (event: PointerEvent) => {
+      if (bootStarted) return;
+      const rect = host.getBoundingClientRect();
+      if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) {
+        startBoot();
+      }
+    };
+    window.addEventListener("pointermove", onDemandPointer, { passive: true });
+    window.addEventListener("pointerdown", onDemandPointer, { passive: true });
 
     return () => {
       cancelled = true;
@@ -448,9 +441,9 @@ export function FlowmapImage({
         const idleWindow = window as typeof window & { cancelIdleCallback?: (id: number) => void };
         idleWindow.cancelIdleCallback?.(idleBootId);
       }
-      stopWaiting();
       if (raf) window.cancelAnimationFrame(raf);
-      image.removeEventListener("load", scheduleBoot);
+      window.removeEventListener("pointermove", onDemandPointer);
+      window.removeEventListener("pointerdown", onDemandPointer);
       resizeObserver?.disconnect();
       intersectionObserver?.disconnect();
       window.removeEventListener("pointermove", onPointerMove);

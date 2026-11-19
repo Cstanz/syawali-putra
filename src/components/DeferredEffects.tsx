@@ -40,6 +40,13 @@ export function DeferredEffects() {
     };
 
     const loadMotion = () => {
+      if (cancelled || Motion) return;
+      document.documentElement.dataset.motionIntent = "true";
+      window.removeEventListener("pointermove", onIntent);
+      window.removeEventListener("pointerdown", onIntent);
+      window.removeEventListener("touchstart", onIntent);
+      window.removeEventListener("wheel", onIntent);
+      window.removeEventListener("keydown", onIntent);
       void import("./Motion").then((motion) => {
         if (cancelled) return;
         setMotion(() => motion.Motion);
@@ -47,10 +54,20 @@ export function DeferredEffects() {
       });
     };
 
-    whenIdle(loadMotion, 800, 250);
+    const onIntent = () => loadMotion();
+    window.addEventListener("pointermove", onIntent, { passive: true });
+    window.addEventListener("pointerdown", onIntent, { passive: true });
+    window.addEventListener("touchstart", onIntent, { passive: true });
+    window.addEventListener("wheel", onIntent, { passive: true });
+    window.addEventListener("keydown", onIntent);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("pointermove", onIntent);
+      window.removeEventListener("pointerdown", onIntent);
+      window.removeEventListener("touchstart", onIntent);
+      window.removeEventListener("wheel", onIntent);
+      window.removeEventListener("keydown", onIntent);
       idleIds.forEach((id) => idleWindow.cancelIdleCallback?.(id));
       timers.forEach((id) => window.clearTimeout(id));
     };

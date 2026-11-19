@@ -17,10 +17,13 @@ export function Motion() {
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const skipIntro = reduced || document.documentElement.dataset.motionIntent === "true";
     const loader = document.querySelector<HTMLElement>(".intro-loader");
-    if (reduced && loader) loader.style.display = "none";
+    if (skipIntro && loader) loader.style.display = "none";
 
-    const lenis = reduced ? null : new Lenis({ lerp: 0.09, smoothWheel: true });
+    // Keep native scrolling on touch devices; Lenis' always-running ticker is for desktop only.
+    const lenis = reduced || !finePointer ? null : new Lenis({ lerp: 0.09, smoothWheel: true });
     if (lenis) gsap.ticker.lagSmoothing(0);
     if (lenis) lenis.on("scroll", ScrollTrigger.update);
     const tick = lenis ? (time: number) => lenis.raf(time * 1000) : null;
@@ -50,12 +53,7 @@ export function Motion() {
     cleanups.push(() => document.removeEventListener("click", onAnchorClick));
 
     const context = gsap.context(() => {
-      if (loader && reduced) {
-        gsap.set(loader, { display: "grid", autoAlpha: 1, clipPath: "none" });
-        gsap.set(".intro-loader__thumb, .intro-loader__wordmark, .intro-loader__top, .intro-loader__bottom", { y: 0, autoAlpha: 1, scale: 1, clearProps: "clipPath" });
-        gsap.set(".intro-loader__progress span", { scaleX: 1 });
-        gsap.delayedCall(0.55, () => gsap.to(loader, { autoAlpha: 0, duration: 0.22, ease: "power1.out", onComplete: () => { loader.style.display = "none"; } }));
-      } else if (loader) {
+      if (loader && !skipIntro) {
         gsap.set(loader, { display: "grid", autoAlpha: 1, clipPath: "inset(0 0 0 0)" });
         gsap.timeline({ defaults: { ease: "power3.out" }, onComplete: () => { loader.style.display = "none"; } })
           .fromTo(".intro-loader__thumb", { y: 54, autoAlpha: 0, scale: 0.94 }, { y: 0, autoAlpha: 1, scale: 1, duration: 0.52, stagger: 0.08 }, 0)
@@ -186,11 +184,12 @@ export function Motion() {
           document.fonts?.ready.then(() => ScrollTrigger.refresh());
         }
 
-        gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => {
+        if (finePointer) gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => {
           gsap.fromTo(element, { y: 28, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.65, ease: "power3.out", clearProps: "all", scrollTrigger: { trigger: element, start: "top 88%", once: true } });
         });
       }
 
+      if (finePointer) {
       const preview = document.createElement("div");
       preview.className = "project-cursor-preview";
       preview.setAttribute("aria-hidden", "true");
@@ -310,6 +309,7 @@ export function Motion() {
         });
       });
       cleanups.push(() => preview.remove());
+      }
     });
 
     return () => {
