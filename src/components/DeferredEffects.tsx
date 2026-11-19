@@ -26,6 +26,10 @@ export function DeferredEffects() {
     const timers: number[] = [];
     const idleIds: number[] = [];
     const idleWindow = window as IdleWindow;
+    const coarsePointer = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    const intentEvents = coarsePointer
+      ? ["touchmove", "scroll", "wheel", "keydown"]
+      : ["pointermove", "pointerdown", "wheel", "keydown"];
 
     const whenIdle = (callback: () => void, timeout: number, fallbackDelay: number) => {
       if (idleWindow.requestIdleCallback) idleIds.push(idleWindow.requestIdleCallback(callback, { timeout }));
@@ -42,11 +46,7 @@ export function DeferredEffects() {
     const loadMotion = () => {
       if (cancelled || Motion) return;
       document.documentElement.dataset.motionIntent = "true";
-      window.removeEventListener("pointermove", onIntent);
-      window.removeEventListener("pointerdown", onIntent);
-      window.removeEventListener("touchstart", onIntent);
-      window.removeEventListener("wheel", onIntent);
-      window.removeEventListener("keydown", onIntent);
+      removeIntentListeners();
       void import("./Motion").then((motion) => {
         if (cancelled) return;
         setMotion(() => motion.Motion);
@@ -55,19 +55,14 @@ export function DeferredEffects() {
     };
 
     const onIntent = () => loadMotion();
-    window.addEventListener("pointermove", onIntent, { passive: true });
-    window.addEventListener("pointerdown", onIntent, { passive: true });
-    window.addEventListener("touchstart", onIntent, { passive: true });
-    window.addEventListener("wheel", onIntent, { passive: true });
-    window.addEventListener("keydown", onIntent);
+    const removeIntentListeners = () => {
+      intentEvents.forEach((eventName) => window.removeEventListener(eventName, onIntent));
+    };
+    intentEvents.forEach((eventName) => window.addEventListener(eventName, onIntent, { passive: true }));
 
     return () => {
       cancelled = true;
-      window.removeEventListener("pointermove", onIntent);
-      window.removeEventListener("pointerdown", onIntent);
-      window.removeEventListener("touchstart", onIntent);
-      window.removeEventListener("wheel", onIntent);
-      window.removeEventListener("keydown", onIntent);
+      removeIntentListeners();
       idleIds.forEach((id) => idleWindow.cancelIdleCallback?.(id));
       timers.forEach((id) => window.clearTimeout(id));
     };

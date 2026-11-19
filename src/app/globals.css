@@ -12,9 +12,7 @@
   --gutter: clamp(20px, 5.1vw, 76px);
   --shell: min(1440px, calc(100% - var(--gutter) - var(--gutter)));
   --section-space: clamp(76px, 9vw, 132px);
-  /* Portrait: replace the image here. Position controls which part of the photo is framed (adjust per photo). */
-  --portrait-image: url("/images/potrait.webp");
-  --portrait-position: 50% 0%;
+  /* Portrait positioning is set on the Next Image element to keep one optimized request. */
   --portrait-card-width: clamp(84px, 5.85vw, 120px);
   --portrait-card-height: clamp(101px, 7.05vw, 144px);
   --layout-pad: clamp(10px, .9vw, 16px);
@@ -66,7 +64,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 .portrait-flow { position: relative; height: 380svh; /* 100svh stage + 280svh of pinned scroll; keep in sync with PIN in Motion.tsx */ background: var(--night); }
 .portrait-flow__stage { position: sticky; top: 0; isolation: isolate; display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100svh; overflow: hidden; background: var(--night); }
 .portrait-flow__plane { position: absolute; z-index: 2; inset: 0; overflow: hidden; background: transparent; pointer-events: none; }
-.portrait-flow__image { position: absolute; top: calc(100svh - var(--layout-pad) - var(--frame-lift) - var(--portrait-card-height) / 2); left: 50%; width: var(--portrait-card-width); height: var(--portrait-card-height); margin: 0; background: #c9c9c5 var(--portrait-image) var(--portrait-position) / cover no-repeat; transform: translate(-50%, -50%); will-change: left, top, width, height, transform; }
+.portrait-flow__image { position: absolute; top: calc(100svh - var(--layout-pad) - var(--frame-lift) - var(--portrait-card-height) / 2); left: 50%; width: var(--portrait-card-width); height: var(--portrait-card-height); margin: 0; background: #c9c9c5; transform: translate(-50%, -50%); will-change: left, top, width, height, transform; }
 .flowmap-image__fallback { z-index: 0; object-fit: cover; opacity: 1; transition: opacity .18s ease; }
 .flowmap-image__canvas { position: absolute; z-index: 1; top: -20%; left: -20%; display: block; width: 140% !important; height: 140% !important; opacity: 0; pointer-events: none; transition: opacity .18s ease; }
 .flowmap-image.is-flowmap-ready { background: transparent; }

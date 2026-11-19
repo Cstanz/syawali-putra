@@ -17,7 +17,7 @@ export default function Home() {
     <div className="intro-loader" aria-hidden="true">
       <div className="intro-loader__top"><span>PORTFOLIO / 2026</span><span>PROGRAMMING / AI / TECHNOLOGY</span></div>
       <div className="intro-loader__stage">
-        <div className="intro-loader__track">{introProjects.map((project) => <div className="intro-loader__thumb" key={project.number}><Image src={project.image} alt="" width={360} height={480} priority /></div>)}</div>
+        <div className="intro-loader__track">{introProjects.map((project) => <div className="intro-loader__thumb" key={project.number}><Image src={project.image} alt="" width={360} height={480} /></div>)}</div>
         <span className="intro-loader__wordmark">SYAWALI</span>
       </div>
       <div className="intro-loader__bottom"><span>SELECTED WORK</span><div className="intro-loader__progress" aria-hidden="true"><span /></div><span>PROJECTS / {String(projects.length).padStart(2, "0")}</span></div>
