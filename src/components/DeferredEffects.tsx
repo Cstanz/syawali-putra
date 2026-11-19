@@ -2,54 +2,65 @@
 
 import { useEffect, useState } from "react";
 
-type Effects = {
-  Motion: typeof import("./Motion").Motion;
+type MotionComponent = typeof import("./Motion").Motion;
+type Overlays = {
   CursorSmear: typeof import("./CursorSmear").CursorSmear;
   FilmGrain: typeof import("./FilmGrain").FilmGrain;
 };
 
-/** Keep animation libraries out of the first render; load them once the browser is idle. */
+type IdleWindow = typeof window & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+  cancelIdleCallback?: (id: number) => void;
+};
+
+/**
+ * Keep animation libraries out of the first render. Motion (GSAP/Lenis, intro loader, scroll scenes)
+ * loads first; the purely cosmetic overlays (cursor trail, film grain) load in a later idle slot so
+ * their work never stacks into the same long task as the main scene setup.
+ */
 export function DeferredEffects() {
-  const [effects, setEffects] = useState<Effects | null>(null);
+  const [Motion, setMotion] = useState<MotionComponent | null>(null);
+  const [overlays, setOverlays] = useState<Overlays | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let timeoutId: number | undefined;
-    let idleId: number | undefined;
-    const idleWindow = window as typeof window & {
-      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-      cancelIdleCallback?: (id: number) => void;
+    const timers: number[] = [];
+    const idleIds: number[] = [];
+    const idleWindow = window as IdleWindow;
+
+    const whenIdle = (callback: () => void, timeout: number, fallbackDelay: number) => {
+      if (idleWindow.requestIdleCallback) idleIds.push(idleWindow.requestIdleCallback(callback, { timeout }));
+      else timers.push(window.setTimeout(callback, fallbackDelay));
     };
 
-    const load = () => {
-      void Promise.all([
-        import("./Motion"),
-        import("./CursorSmear"),
-        import("./FilmGrain"),
-      ]).then(([motion, cursor, grain]) => {
+    const loadOverlays = () => {
+      void Promise.all([import("./CursorSmear"), import("./FilmGrain")]).then(([cursor, grain]) => {
         if (cancelled) return;
-        setEffects({
-          Motion: motion.Motion,
-          CursorSmear: cursor.CursorSmear,
-          FilmGrain: grain.FilmGrain,
-        });
+        setOverlays({ CursorSmear: cursor.CursorSmear, FilmGrain: grain.FilmGrain });
       });
     };
 
-    if (idleWindow.requestIdleCallback) {
-      idleId = idleWindow.requestIdleCallback(load, { timeout: 800 });
-    } else {
-      timeoutId = window.setTimeout(load, 250);
-    }
+    const loadMotion = () => {
+      void import("./Motion").then((motion) => {
+        if (cancelled) return;
+        setMotion(() => motion.Motion);
+        whenIdle(loadOverlays, 1200, 400);
+      });
+    };
+
+    whenIdle(loadMotion, 800, 250);
 
     return () => {
       cancelled = true;
-      if (idleId !== undefined) idleWindow.cancelIdleCallback?.(idleId);
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      idleIds.forEach((id) => idleWindow.cancelIdleCallback?.(id));
+      timers.forEach((id) => window.clearTimeout(id));
     };
   }, []);
 
-  if (!effects) return null;
-  const { Motion, CursorSmear, FilmGrain } = effects;
-  return <><Motion /><CursorSmear /><FilmGrain /></>;
+  return (
+    <>
+      {Motion && <Motion />}
+      {overlays && <><overlays.CursorSmear /><overlays.FilmGrain /></>}
+    </>
+  );
 }

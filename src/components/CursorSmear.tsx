@@ -34,12 +34,26 @@ export function CursorSmear() {
     let overPhoto = false;
     const points: Point[] = [];
 
+    let photoEl: HTMLElement | null = null;
+    let haloSize = "";
+    const getPhotoRect = () => {
+      if (!photoEl || !photoEl.isConnected) photoEl = document.querySelector<HTMLElement>(".flowmap-image");
+      return photoEl ? photoEl.getBoundingClientRect() : null;
+    };
+    const applyPhotoHaloSize = (width: number) => {
+      const next = `${Math.max(40, Math.min(90, width * 0.065))}px`;
+      if (next === haloSize) return;
+      haloSize = next;
+      halo.style.setProperty("--cursor-photo-size", next);
+    };
     const syncPhotoHaloSize = () => {
-      const photo = document.querySelector<HTMLElement>(".flowmap-image");
-      if (!photo) return;
-      const width = photo.getBoundingClientRect().width;
-      const size = Math.max(40, Math.min(90, width * 0.065));
-      halo.style.setProperty("--cursor-photo-size", `${size}px`);
+      const rect = getPhotoRect();
+      if (rect) applyPhotoHaloSize(rect.width);
+    };
+    let scrollRaf = 0;
+    const onScroll = () => {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => { scrollRaf = 0; syncPhotoHaloSize(); });
     };
 
     const resize = () => {
@@ -127,8 +141,8 @@ export function CursorSmear() {
       if (event.pointerType === "touch") return;
       target = { x: event.clientX, y: event.clientY };
       onLight = event.target instanceof Element && event.target.closest(LIGHT_SURFACES) !== null;
-      const photo = document.querySelector<HTMLElement>(".flowmap-image")?.getBoundingClientRect();
-      syncPhotoHaloSize();
+      const photo = getPhotoRect();
+      if (photo) applyPhotoHaloSize(photo.width);
       overPhoto = Boolean(photo && event.clientX >= photo.left && event.clientX <= photo.right && event.clientY >= photo.top && event.clientY <= photo.bottom);
       halo.classList.remove("is-hidden");
       halo.classList.toggle("is-light", onLight);
@@ -146,14 +160,15 @@ export function CursorSmear() {
     window.addEventListener("pointermove", onMove, { passive: true });
     document.documentElement.addEventListener("pointerleave", onLeave);
     window.addEventListener("resize", resize, { passive: true });
-    window.addEventListener("scroll", syncPhotoHaloSize, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
       document.documentElement.removeEventListener("pointerleave", onLeave);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("scroll", syncPhotoHaloSize);
+      window.removeEventListener("scroll", onScroll);
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
       canvas.remove();
       halo.remove();
     };

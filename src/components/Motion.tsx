@@ -86,13 +86,17 @@ export function Motion() {
           };
 
           const start = startFrame();
+          // The frame's position inside the stage only changes on resize/refresh, so measure it then
+          // instead of forcing a layout read on every scroll frame.
+          let measured = start;
+          const measure = () => { measured = startFrame(); };
           const monogram = flow.querySelector<HTMLElement>(".portrait-flow__monogram");
           const followers = flow.querySelectorAll<HTMLElement>(".portrait-flow__caption:not(.portrait-flow__monogram)");
           const zoomEase = gsap.parseEase("power1.inOut");
           const paintZoom = (scrollProgress: number) => {
             const mix = gsap.utils.interpolate;
             const progress = zoomEase(gsap.utils.clamp(0, 1, scrollProgress / 0.46));
-            const cur = startFrame();
+            const cur = measured;
 
             const width = mix(cur.width, stage.clientWidth, progress);
             const height = mix(cur.height, stage.clientHeight, progress);
@@ -134,23 +138,33 @@ export function Motion() {
             scrub: 0.45,
             invalidateOnRefresh: true,
             onUpdate: (self) => paintZoom(self.progress),
-            onRefresh: (self) => paintZoom(self.progress),
+            onRefresh: (self) => { measure(); paintZoom(self.progress); },
           });
 
-                const syncPortraitZoom = () => {
-        const rect = flow.getBoundingClientRect();
-        const range = Math.max(1, rect.height - window.innerHeight);
-        const progress = gsap.utils.clamp(0, 1, -rect.top / range);
-        paintZoom(progress);
-      };
-      syncPortraitZoom();
-      window.addEventListener("scroll", syncPortraitZoom, { passive: true });
-      window.addEventListener("resize", syncPortraitZoom);
-      cleanups.push(() => {
-        window.removeEventListener("scroll", syncPortraitZoom);
-        window.removeEventListener("resize", syncPortraitZoom);
-      });
-document.fonts?.ready.then(() => ScrollTrigger.refresh());
+          const syncPortraitZoom = () => {
+            const rect = flow.getBoundingClientRect();
+            const range = Math.max(1, rect.height - window.innerHeight);
+            const progress = gsap.utils.clamp(0, 1, -rect.top / range);
+            paintZoom(progress);
+          };
+          let syncRaf = 0;
+          const queueSync = () => {
+            if (syncRaf) return;
+            syncRaf = requestAnimationFrame(() => { syncRaf = 0; syncPortraitZoom(); });
+          };
+          const onResizeSync = () => { measure(); queueSync(); };
+          syncPortraitZoom();
+          window.addEventListener("scroll", queueSync, { passive: true });
+          window.addEventListener("resize", onResizeSync);
+          const frameObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(onResizeSync) : null;
+          frameObserver?.observe(stage);
+          cleanups.push(() => {
+            if (syncRaf) cancelAnimationFrame(syncRaf);
+            frameObserver?.disconnect();
+            window.removeEventListener("scroll", queueSync);
+            window.removeEventListener("resize", onResizeSync);
+          });
+          document.fonts?.ready.then(() => ScrollTrigger.refresh());
         }
 
         if (flow && shade && header && captions && story) {
