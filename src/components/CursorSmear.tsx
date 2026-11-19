@@ -4,10 +4,10 @@ import { useEffect } from "react";
 
 type Point = { x: number; y: number; t: number; width: number; duration: number };
 
-const LIFE = 420;
-const MAX_POINTS = 44;
-const WIDTH = 9;
-const ALPHA = 0.1;
+const LIFE = 620;
+const MAX_POINTS = 36;
+const WIDTH = 7;
+const ALPHA = 0.09;
 const FOLLOW_MS = 20;
 const LIGHT_SURFACES = ".work, .about, .availability";
 
@@ -38,7 +38,7 @@ export function CursorSmear() {
       const photo = document.querySelector<HTMLElement>(".flowmap-image");
       if (!photo) return;
       const width = photo.getBoundingClientRect().width;
-      const size = Math.max(48, Math.min(112, width * 0.075));
+      const size = Math.max(40, Math.min(90, width * 0.065));
       halo.style.setProperty("--cursor-photo-size", `${size}px`);
     };
 

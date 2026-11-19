@@ -27,7 +27,7 @@ export default function Home() {
         <header className="site-header shell"><h1 className="site-header__title" id="hero-title">SYAWALI PUTRA</h1><div className="site-header__info"><span>INFO:</span><p>ASPIRING DEVELOPER — EXPLORING PROGRAMMING, AI &amp; TECHNOLOGY.</p></div><div className="site-header__subrow"><nav aria-label="Main navigation"><span>NAV.:</span><a href="#top">HOME</a><a href="#work">PROJECTS ({String(projects.length).padStart(2, "0")})</a><a href="#about">ABOUT</a></nav><span className="site-header__year">©2026</span></div></header>
         {/* One continuous portrait plane. The photo keeps GSAP's existing scroll zoom. */}
         <div className="portrait-flow__plane">
-          <FlowmapImage className="portrait-flow__image" src="/images/potrait.jpg" alt="Portrait of Syawali Putra" sizes="100vw" priority imagePosition={[0.5, 0]} distortion={0.06} edgeBend={0.11} shadowStrength={0.43} />
+          <FlowmapImage className="portrait-flow__image" src="/images/potrait.webp" alt="Portrait of Syawali Putra" sizes="100vw" priority imagePosition={[0.5, 0]} distortion={0.09} edgeBend={0.16} shadowStrength={0.52} />
           <div className="portrait-flow__shade" />
         </div>
         <div className="portrait-flow__layout">

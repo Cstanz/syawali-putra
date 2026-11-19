@@ -147,7 +147,7 @@ export function FlowmapImage({
   edgeBend = 0.2,
   shadowStrength = 0.2,
 }: FlowmapImageProps) {
-  const [imagePositionX, imagePositionY] = imagePosition;
+  const [imagePositionX, imagePositionYProp] = imagePosition;
   const hostRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
@@ -155,6 +155,14 @@ export function FlowmapImage({
     const host = hostRef.current;
     const image = imageRef.current;
     if (!host || !image || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const landscapeCrop = window.matchMedia("(orientation: landscape) and (max-height: 560px) and (max-width: 1000px)");
+    const currentImagePositionY = () => landscapeCrop.matches ? 1 : imagePositionYProp;
+    const updateImagePosition = () => {
+      const y = currentImagePositionY();
+      const position = program?.uniforms.uImagePosition?.value as Vec2 | undefined;
+      position?.set(imagePositionX, y);
+    };
 
     let cancelled = false;
     let raf = 0;
@@ -170,6 +178,8 @@ export function FlowmapImage({
     let intersectionObserver: IntersectionObserver | null = null;
     let lastPlaneWidth = 0;
     let lastPlaneHeight = 0;
+    updateImagePosition();
+    landscapeCrop.addEventListener("change", updateImagePosition);
     let lastPointer: { x: number; y: number; time: number } | null = null;
     let lastActivity = performance.now();
     let pointerPressed = false;
@@ -206,6 +216,7 @@ export function FlowmapImage({
 
     const onWindowResize = () => {
       if (!renderer) return;
+      updateImagePosition();
       // The buffer tracks the viewport, whose size is stable during the scroll zoom.
       renderer.setSize(window.innerWidth * (1 + EDGE_PAD * 2), window.innerHeight * (1 + EDGE_PAD * 2));
       resize();
@@ -333,7 +344,7 @@ export function FlowmapImage({
         });
         const gl = renderer.gl;
         gl.clearColor(0, 0, 0, 0);
-        flowmap = new Flowmap(gl, { size: FLOW_SIZE, falloff: 0.29, alpha: 0.72, dissipation: 0.96 });
+        flowmap = new Flowmap(gl, { size: FLOW_SIZE, falloff: 0.34, alpha: 0.82, dissipation: 0.96 });
         for (const target of [flowmap.mask.read, flowmap.mask.write]) {
           gl.renderer.bindFramebuffer({ buffer: target.buffer });
           gl.clearColor(0, 0, 0, 0);
@@ -355,7 +366,7 @@ export function FlowmapImage({
             uPad: { value: EDGE_PAD / (1 + EDGE_PAD * 2) },
             uPlaneResolution: { value: planeResolution },
             uImageResolution: { value: imageResolution },
-            uImagePosition: { value: new Vec2(imagePositionX, imagePositionY) },
+            uImagePosition: { value: new Vec2(imagePositionX, currentImagePositionY()) },
             uFlowTexel: { value: flowTexel },
             uDistortion: { value: distortion },
             uEdgeBend: { value: edgeBend },
@@ -405,6 +416,7 @@ export function FlowmapImage({
 
     return () => {
       cancelled = true;
+      landscapeCrop.removeEventListener("change", updateImagePosition);
       if (raf) window.cancelAnimationFrame(raf);
       image.removeEventListener("load", boot);
       resizeObserver?.disconnect();
@@ -437,11 +449,11 @@ export function FlowmapImage({
       gl?.getExtension("WEBGL_lose_context")?.loseContext();
       canvas?.remove();
     };
-  }, [distortion, edgeBend, imagePositionX, imagePositionY, shadowStrength, src]);
+  }, [distortion, edgeBend, imagePositionX, imagePositionYProp, shadowStrength, src]);
 
   return (
     <div ref={hostRef} className={`flowmap-image ${className}`.trim()}>
-      <Image ref={imageRef} src={src} alt={alt} fill sizes={sizes} priority={priority} className="flowmap-image__fallback" style={{ objectPosition: `${imagePositionX * 100}% ${imagePositionY * 100}%` }} />
+      <Image ref={imageRef} src={src} alt={alt} fill sizes={sizes} priority={priority} className="flowmap-image__fallback" style={{ objectPosition: `${imagePositionX * 100}% ${imagePositionYProp * 100}%` }} />
     </div>
   );
 }

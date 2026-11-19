@@ -64,7 +64,7 @@ export function AboutPanel() {
               <p className="about-panel__side about-panel__side--left">SYAWALI PUTRA IS<br />BASED IN PERTH, AUSTRALIA,</p>
               <div className="about-panel__center">
                 <span className="about-panel__mark logo-mark logo-mark--dark"><Image src="/images/logo-transparent.svg" alt="" width={1672} height={941} /></span>
-                <div className="about-panel__portrait"><Image src="/images/potrait.jpg" alt="Portrait of Syawali Putra" fill sizes="240px" quality={90} /></div>
+                <div className="about-panel__portrait"><Image src="/images/potrait.webp" alt="Portrait of Syawali Putra" fill sizes="240px" quality={90} /></div>
               </div>
               <p className="about-panel__side about-panel__side--right">ASPIRING DEVELOPER<br />PROGRAMMING, AI &amp; TECHNOLOGY</p>
               <p className="about-panel__line">LEARNING THROUGH EXPERIMENTATION</p>
@@ -79,7 +79,7 @@ export function AboutPanel() {
               </div>
             </section>
 
-            <figure className="about-panel__photo"><Image src="/images/potrait.jpg" alt="" fill sizes="2000px" quality={95} /></figure>
+            <figure className="about-panel__photo"><Image src="/images/potrait.webp" alt="" fill sizes="2000px" quality={95} /></figure>
 
             <section className="about-panel__row about-panel__row--tight">
               <span className="about-panel__label">RECOGNITIONS:</span>
