@@ -18,9 +18,6 @@ export function Motion() {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    const skipIntro = reduced || document.documentElement.dataset.motionIntent === "true";
-    const loader = document.querySelector<HTMLElement>(".intro-loader");
-    if (skipIntro && loader) loader.style.display = "none";
 
     // Keep native scrolling on touch devices; Lenis' always-running ticker is for desktop only.
     const lenis = reduced || !finePointer ? null : new Lenis({ lerp: 0.09, smoothWheel: true });
@@ -53,17 +50,6 @@ export function Motion() {
     cleanups.push(() => document.removeEventListener("click", onAnchorClick));
 
     const context = gsap.context(() => {
-      if (loader && !skipIntro) {
-        gsap.set(loader, { display: "grid", autoAlpha: 1, clipPath: "inset(0 0 0 0)" });
-        gsap.timeline({ defaults: { ease: "power3.out" }, onComplete: () => { loader.style.display = "none"; } })
-          .fromTo(".intro-loader__thumb", { y: 54, autoAlpha: 0, scale: 0.94 }, { y: 0, autoAlpha: 1, scale: 1, duration: 0.52, stagger: 0.08 }, 0)
-          .fromTo(".intro-loader__wordmark", { y: 34, autoAlpha: 0, clipPath: "inset(0 0 100% 0)" }, { y: 0, autoAlpha: 1, clipPath: "inset(0 0 0 0)", duration: 0.66, ease: "power4.out" }, 0.16)
-          .fromTo(".intro-loader__top, .intro-loader__bottom", { y: 10, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.36, stagger: 0.06 }, 0.12)
-          .fromTo(".intro-loader__progress span", { scaleX: 0 }, { scaleX: 1, duration: 0.86, ease: "power2.inOut" }, 0.2)
-          .to(".intro-loader__track", { xPercent: -3, duration: 0.86, ease: "power2.inOut" }, 0.18)
-          .to(loader, { clipPath: "inset(0 0 100% 0)", duration: 0.62, ease: "power4.inOut" }, 1.02);
-      }
-
       {
         const flow = document.querySelector<HTMLElement>(".portrait-flow");
         const stage = flow?.querySelector<HTMLElement>(".portrait-flow__stage");

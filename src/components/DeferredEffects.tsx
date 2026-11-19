@@ -45,7 +45,6 @@ export function DeferredEffects() {
 
     const loadMotion = () => {
       if (cancelled || Motion) return;
-      document.documentElement.dataset.motionIntent = "true";
       removeIntentListeners();
       void import("./Motion").then((motion) => {
         if (cancelled) return;
