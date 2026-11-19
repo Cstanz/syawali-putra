@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 type MotionComponent = typeof import("./Motion").Motion;
 type Overlays = {
-  CursorSmear: typeof import("./CursorSmear").CursorSmear;
   FilmGrain: typeof import("./FilmGrain").FilmGrain;
 };
 
@@ -15,7 +14,7 @@ type IdleWindow = typeof window & {
 
 /**
  * Keep animation libraries out of the first render. Motion (GSAP/Lenis, intro loader, scroll scenes)
- * loads first; the purely cosmetic overlays (cursor trail, film grain) load in a later idle slot so
+ * loads first; the cosmetic film grain overlay loads in a later idle slot so
  * their work never stacks into the same long task as the main scene setup.
  */
 export function DeferredEffects() {
@@ -34,9 +33,9 @@ export function DeferredEffects() {
     };
 
     const loadOverlays = () => {
-      void Promise.all([import("./CursorSmear"), import("./FilmGrain")]).then(([cursor, grain]) => {
+      void import("./FilmGrain").then((grain) => {
         if (cancelled) return;
-        setOverlays({ CursorSmear: cursor.CursorSmear, FilmGrain: grain.FilmGrain });
+        setOverlays({ FilmGrain: grain.FilmGrain });
       });
     };
 
@@ -60,7 +59,7 @@ export function DeferredEffects() {
   return (
     <>
       {Motion && <Motion />}
-      {overlays && <><overlays.CursorSmear /><overlays.FilmGrain /></>}
+      {overlays && <overlays.FilmGrain />}
     </>
   );
 }
