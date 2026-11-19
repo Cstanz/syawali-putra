@@ -176,6 +176,8 @@ export function FlowmapImage({
     let texture: Texture | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let intersectionObserver: IntersectionObserver | null = null;
+    let idleBootId: number | undefined;
+    let bootTimeoutId: number | undefined;
     let lastPlaneWidth = 0;
     let lastPlaneHeight = 0;
     updateImagePosition();
@@ -411,14 +413,28 @@ export function FlowmapImage({
       }
     };
 
-    if (image.complete) boot();
-    else image.addEventListener("load", boot, { once: true });
+    const scheduleBoot = () => {
+      if (cancelled) return;
+      const idleWindow = window as typeof window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      };
+      if (idleWindow.requestIdleCallback) idleBootId = idleWindow.requestIdleCallback(boot, { timeout: 900 });
+      else bootTimeoutId = window.setTimeout(boot, 200);
+    };
+
+    if (image.complete) scheduleBoot();
+    else image.addEventListener("load", scheduleBoot, { once: true });
 
     return () => {
       cancelled = true;
       landscapeCrop.removeEventListener("change", updateImagePosition);
+      if (idleBootId !== undefined) {
+        const idleWindow = window as typeof window & { cancelIdleCallback?: (id: number) => void };
+        idleWindow.cancelIdleCallback?.(idleBootId);
+      }
+      if (bootTimeoutId !== undefined) window.clearTimeout(bootTimeoutId);
       if (raf) window.cancelAnimationFrame(raf);
-      image.removeEventListener("load", boot);
+      image.removeEventListener("load", scheduleBoot);
       resizeObserver?.disconnect();
       intersectionObserver?.disconnect();
       window.removeEventListener("pointermove", onPointerMove);
