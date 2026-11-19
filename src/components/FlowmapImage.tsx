@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef } from "react";
-import { Flowmap, Geometry, Mesh, Program, Renderer, Texture, Vec2 } from "ogl";
+import type { Flowmap, Geometry, Mesh, Program, Renderer, Texture, Vec2 } from "ogl";
 
 type FlowmapImageProps = {
   src: string;
@@ -95,7 +95,7 @@ const fragment = /* glsl */ `
   }
 `;
 
-function makeGrid(gl: Renderer["gl"]) {
+function makeGrid(gl: Renderer["gl"], GeometryCtor: typeof import("ogl").Geometry) {
   const side = GRID_SEGMENTS + 1;
   const positions = new Float32Array(side * side * 2);
   const uvs = new Float32Array(side * side * 2);
@@ -126,7 +126,7 @@ function makeGrid(gl: Renderer["gl"]) {
     }
   }
 
-  return new Geometry(gl, {
+  return new GeometryCtor(gl, {
     position: { size: 2, data: positions },
     uv: { size: 2, data: uvs },
     index: { size: 1, data: indices },
@@ -180,17 +180,17 @@ export function FlowmapImage({
     let bootTimeoutId: number | undefined;
     let lastPlaneWidth = 0;
     let lastPlaneHeight = 0;
+    let incomingVelocity: Vec2 | null = null;
+    let mouse: Vec2 | null = null;
+    let planeResolution: Vec2 | null = null;
+    let imageResolution: Vec2 | null = null;
+    let flowTexel: Vec2 | null = null;
     updateImagePosition();
     landscapeCrop.addEventListener("change", updateImagePosition);
     let lastPointer: { x: number; y: number; time: number } | null = null;
     let lastActivity = performance.now();
     let pointerPressed = false;
     let pressPosition: { x: number; y: number } | null = null;
-    const incomingVelocity = new Vec2();
-    const mouse = new Vec2(-1, -1);
-    const planeResolution = new Vec2(1, 1);
-    const imageResolution = new Vec2(1, 1);
-    const flowTexel = new Vec2(1 / FLOW_SIZE, 1 / FLOW_SIZE);
     const getCanvasRect = () => {
       const rect = host.getBoundingClientRect();
       return {
@@ -202,7 +202,7 @@ export function FlowmapImage({
     };
 
     const resize = () => {
-      if (!flowmap || !program) return;
+      if (!flowmap || !program || !planeResolution) return;
       const rect = host.getBoundingClientRect();
       const width = Math.max(1, rect.width);
       const height = Math.max(1, rect.height);
@@ -230,7 +230,7 @@ export function FlowmapImage({
 
     const renderFrame = () => {
       raf = 0;
-      if (cancelled || !visible || document.hidden || !renderer || !program || !flowmap) return;
+      if (cancelled || !visible || document.hidden || !renderer || !program || !flowmap || !incomingVelocity || !mouse) return;
 
       if (pointerPressed && pressPosition) {
         mouse.set(pressPosition.x, 1 - pressPosition.y);
@@ -255,6 +255,7 @@ export function FlowmapImage({
     };
 
     const onPointerMove = (event: PointerEvent) => {
+      if (!incomingVelocity || !mouse) return;
       const rect = getCanvasRect();
       const x = (event.clientX - rect.left) / Math.max(1, rect.width);
       const y = (event.clientY - rect.top) / Math.max(1, rect.height);
@@ -282,7 +283,7 @@ export function FlowmapImage({
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || !flowmap) return;
+      if (event.button !== 0 || !flowmap || !mouse) return;
       const photoRect = host.getBoundingClientRect();
       if (event.clientX < photoRect.left || event.clientX > photoRect.right || event.clientY < photoRect.top || event.clientY > photoRect.bottom) return;
       const rect = getCanvasRect();
@@ -311,8 +312,8 @@ export function FlowmapImage({
       lastPointer = null;
       pointerPressed = false;
       pressPosition = null;
-      incomingVelocity.set(0, 0);
-      mouse.set(-1, -1);
+      incomingVelocity?.set(0, 0);
+      mouse?.set(-1, -1);
     };
 
     const onVisibilityChange = () => {
@@ -325,16 +326,25 @@ export function FlowmapImage({
       }
     };
 
-    const boot = () => {
+    const boot = async () => {
       if (cancelled || !image.naturalWidth || !image.naturalHeight) return;
       try {
+        // OGL is only needed after a pointer or touch reaches the portrait. Keep its
+        // WebGL renderer and shader code out of the initial page-load bundle.
+        const OGL = await import("ogl");
+        if (cancelled) return;
+        incomingVelocity = new OGL.Vec2();
+        mouse = new OGL.Vec2(-1, -1);
+        planeResolution = new OGL.Vec2(1, 1);
+        imageResolution = new OGL.Vec2(1, 1);
+        flowTexel = new OGL.Vec2(1 / FLOW_SIZE, 1 / FLOW_SIZE);
         // Create a fresh canvas for each effect lifecycle. This also survives React Strict Mode's
         // development-only setup/cleanup replay after the previous WebGL context was released.
         canvas = document.createElement("canvas");
         canvas.className = "flowmap-image__canvas";
         canvas.setAttribute("aria-hidden", "true");
         host.appendChild(canvas);
-        renderer = new Renderer({
+        renderer = new OGL.Renderer({
           canvas,
           width: window.innerWidth * (1 + EDGE_PAD * 2),
           height: window.innerHeight * (1 + EDGE_PAD * 2),
@@ -346,17 +356,17 @@ export function FlowmapImage({
         });
         const gl = renderer.gl;
         gl.clearColor(0, 0, 0, 0);
-        flowmap = new Flowmap(gl, { size: FLOW_SIZE, falloff: 0.34, alpha: 0.82, dissipation: 0.96 });
+        flowmap = new OGL.Flowmap(gl, { size: FLOW_SIZE, falloff: 0.34, alpha: 0.82, dissipation: 0.96 });
         for (const target of [flowmap.mask.read, flowmap.mask.write]) {
           gl.renderer.bindFramebuffer({ buffer: target.buffer });
           gl.clearColor(0, 0, 0, 0);
           gl.clear(gl.COLOR_BUFFER_BIT);
         }
         gl.renderer.bindFramebuffer();
-        texture = new Texture(gl, { image, generateMipmaps: false, minFilter: gl.LINEAR, magFilter: gl.LINEAR });
-        geometry = makeGrid(gl);
+        texture = new OGL.Texture(gl, { image, generateMipmaps: false, minFilter: gl.LINEAR, magFilter: gl.LINEAR });
+        geometry = makeGrid(gl, OGL.Geometry);
         imageResolution.set(image.naturalWidth, image.naturalHeight);
-        program = new Program(gl, {
+        program = new OGL.Program(gl, {
           vertex,
           fragment,
           transparent: true,
@@ -368,14 +378,14 @@ export function FlowmapImage({
             uPad: { value: EDGE_PAD / (1 + EDGE_PAD * 2) },
             uPlaneResolution: { value: planeResolution },
             uImageResolution: { value: imageResolution },
-            uImagePosition: { value: new Vec2(imagePositionX, currentImagePositionY()) },
+            uImagePosition: { value: new OGL.Vec2(imagePositionX, currentImagePositionY()) },
             uFlowTexel: { value: flowTexel },
             uDistortion: { value: distortion },
             uEdgeBend: { value: edgeBend },
             uShadowStrength: { value: shadowStrength },
           },
         });
-        mesh = new Mesh(gl, { geometry, program, mode: gl.TRIANGLES, frustumCulled: false });
+        mesh = new OGL.Mesh(gl, { geometry, program, mode: gl.TRIANGLES, frustumCulled: false });
         resizeObserver = new ResizeObserver(resize);
         resizeObserver.observe(host);
         resize();
