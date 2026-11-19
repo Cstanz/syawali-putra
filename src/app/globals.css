@@ -248,11 +248,11 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
   .contact__top, .contact__bottom { position: relative; z-index: 1; }
   .contact__mobile-mark { position: absolute; top: 50%; left: 50%; z-index: 0; display: block; width: min(52vw, 360px); transform: translate(-50%, -50%); pointer-events: none; }
   .contact__top { grid-template-columns: minmax(0, 1fr) auto; gap: 12px 16px; font-size: 9px; }
-  .contact__nav { grid-column: 1; grid-row: 1; flex-wrap: wrap; }
-  .contact__socials { grid-column: 1 / -1; grid-row: 2; justify-self: center; flex-wrap: wrap; }
+  .contact__nav { grid-column: 1 / -1; grid-row: 1; justify-self: start; flex-wrap: wrap; }
+  .contact__socials { grid-column: 1; grid-row: 2; justify-self: start; flex-wrap: wrap; }
   .contact__email { grid-column: 1; flex-wrap: wrap; }
   .contact__email strong { overflow-wrap: anywhere; }
-  .contact__credit { grid-column: 2; grid-row: 1; flex-direction: column; align-items: flex-end; gap: 3px; white-space: normal; }
+  .contact__credit { grid-column: 2; grid-row: 2; flex-direction: column; align-items: flex-end; gap: 3px; white-space: normal; }
   .contact__bottom { display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: 8px; }
   .contact__bottom .wordmark { display: none; }
   .contact__bottom > span { grid-column: 1; justify-self: start; text-align: left; }
